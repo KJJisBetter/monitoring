@@ -7,7 +7,10 @@
 
 
 int cpu_data() {
-    //TODO: Improve this function to use more accurate cpu statistics. similar to network_data()
+    //TODO: Improve this function to use more accurate CPU statistics. similar to network_data().
+    static unsigned long long prev_user = 0, prev_nice = 0, prev_system = 0, prev_idle = 0;
+    static unsigned long long prev_iowait = 0, prev_irq = 0, prev_softirq = 0, prev_steal = 0;
+
     FILE* file = fopen("/proc/stat", "r");
     if (file == NULL) {
         printf("Error opening /proc/stat\n");
@@ -15,26 +18,44 @@ int cpu_data() {
     }
 
     char line[256];
-    if (fgets(line, sizeof(line), file) == NULL) {
-        printf("Error reading /proc/stat\n");
-        fclose(file);
-        return -1;
+    unsigned long long user, nice, system, idle, iowait, irq, softirq, steal;
+    unsigned long long total_idle, total_system, total_virtual, total;
+    double total_cpu_usage;
+
+    if (fgets(line, sizeof(line), file)) {
+        if (strncmp(line, "cpu ", 4) == 0) {
+            sscanf(line, "cpu  %llu %llu %llu %llu %llu %llu %llu %llu",
+                   &user, &nice, &system, &idle, &iowait, &irq, &softirq, &steal);
+
+            unsigned long long prev_total_idle = prev_idle + prev_iowait;
+            unsigned long long total_idle = idle + iowait;
+
+            unsigned long long prev_total = (prev_user + prev_nice + prev_system + prev_idle + prev_iowait + prev_irq + prev_softirq + prev_steal);
+            unsigned long long total = (user + nice + system + idle + iowait + irq + softirq + steal);
+
+            unsigned long long total_delta = total - prev_total;
+            unsigned long long idle_delta = total_idle - prev_total_idle;
+
+            total_cpu_usage = 100.0 * (total_delta - idle_delta) / total_delta;
+            printf("Total CPU Usage: %.2f%%\n", total_cpu_usage);
+
+            prev_user = user;
+            prev_nice = nice;
+            prev_system = system;
+            prev_idle = idle;
+            prev_iowait = iowait;
+            prev_irq = irq;
+            prev_softirq = softirq;
+            prev_steal = steal;
+        }
     }
+
     fclose(file);
-
-    unsigned long user, nice, system, idle, iowait, irq, softirq, steal;
-    sscanf(line, "cpu  %lu %lu %lu %lu %lu %lu %lu %lu", &user, &nice, &system, &idle, &iowait, &irq, &softirq, &steal);
-
-    unsigned long total_idle = idle + iowait;
-    unsigned long total_system = system + irq + softirq;
-    unsigned long total_virtual = user + nice + steal;
-
-    unsigned long total = total_idle + total_system + total_virtual;
-
-    double total_cpu_usage = 100.0 * (total - total_idle) / total;
 
     return (int)total_cpu_usage;
 }
+
+
 
 int memory_data() {
     //TODO: Improve this function to use more accurate memory statistics. similar to network_data().
