@@ -10,7 +10,7 @@ int cpu_data() {
     // TODO: Improve this function to use more accurate cpu statistics. similar to network_data()
     FILE* file = fopen("/proc/stat", "r");
     if (file == NULL) {
-        // Error handling
+        printf("Error opening /proc/stat\n");
         return -1;
     }
 
@@ -42,7 +42,7 @@ int memory_data(){
 
     FILE* file = fopen("/proc/meminfo", "r");
     if (file == NULL) {
-        // Error handling
+        printf("Error opening /proc/meminfo\n");
         return -1;
     }
 
@@ -78,7 +78,7 @@ int diskio_data(){
     const char* target_device = "sda";
     FILE* file = fopen("/proc/diskstats", "r");
     if (file == NULL) {
-        // Error handling
+        printf("Error opening /proc/diskstats\n");
         return -1;
     }
 
@@ -138,7 +138,6 @@ int network_data(int interval){
 
     FILE* file = fopen("/proc/net/dev", "r");
     if (file == NULL) {
-        // Error handling
         perror("Error opening /proc/net/dev");
         return -1;
     }
@@ -177,7 +176,6 @@ int network_data(int interval){
 
     file = fopen("/proc/net/dev", "r");
     if (file == NULL) {
-        // Error handling
         perror("Error opening /proc/net/dev");
         return -1;
     }
@@ -209,8 +207,11 @@ int network_data(int interval){
     unsigned long long net_in = stats_end->bytes_received - stats_start->bytes_received;
     unsigned long long net_out = stats_end->bytes_transmitted - stats_start->bytes_transmitted;
 
-    printf("Network In: %llu bytes\n", net_in);
-    printf("Network Out: %llu bytes\n", net_out);
+    double net_in_kb = net_in / 1024.0 / interval;
+    double net_out_kb = net_out / 1024.0 / interval;
+
+    printf("Network In: %.2f KiB/s Network Out: %.2f KiB/s\n", net_in_kb, net_out_kb);
+
 
     free(stats_start);
     free(stats_end);
