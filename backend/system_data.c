@@ -7,7 +7,10 @@
 
 
 int cpu_data() {
-    // TODO: Improve this function to use more accurate cpu statistics. similar to network_data()
+    //TODO: Improve this function to use more accurate CPU statistics. similar to network_data().
+    static unsigned long long prev_user = 0, prev_nice = 0, prev_system = 0, prev_idle = 0;
+    static unsigned long long prev_iowait = 0, prev_irq = 0, prev_softirq = 0, prev_steal = 0;
+
     FILE* file = fopen("/proc/stat", "r");
     if (file == NULL) {
         printf("Error opening /proc/stat\n");
@@ -15,59 +18,69 @@ int cpu_data() {
     }
 
     char line[256];
-    fgets(line, sizeof(line), file);
+    unsigned long long user, nice, system, idle, iowait, irq, softirq, steal;
+    unsigned long long total_idle, total_system, total_virtual, total;
+    double total_cpu_usage;
 
-    char* token = strtok(line, " ");
-    int user = atoi(token);
-    token = strtok(NULL, " ");
-    int nice = atoi(token);
-    token = strtok(NULL, " ");
-    int system = atoi(token);
-    token = strtok(NULL, " ");
-    int idle = atoi(token);
+    if (fgets(line, sizeof(line), file)) {
+        if (strncmp(line, "cpu ", 4) == 0) {
+            sscanf(line, "cpu  %llu %llu %llu %llu %llu %llu %llu %llu",
+                   &user, &nice, &system, &idle, &iowait, &irq, &softirq, &steal);
+
+            unsigned long long prev_total_idle = prev_idle + prev_iowait;
+            unsigned long long total_idle = idle + iowait;
+
+            unsigned long long prev_total = (prev_user + prev_nice + prev_system + prev_idle + prev_iowait + prev_irq + prev_softirq + prev_steal);
+            unsigned long long total = (user + nice + system + idle + iowait + irq + softirq + steal);
+
+            unsigned long long total_delta = total - prev_total;
+            unsigned long long idle_delta = total_idle - prev_total_idle;
+
+            total_cpu_usage = 100.0 * (total_delta - idle_delta) / total_delta;
+            printf("Total CPU Usage: %.2f%%\n", total_cpu_usage);
+
+            prev_user = user;
+            prev_nice = nice;
+            prev_system = system;
+            prev_idle = idle;
+            prev_iowait = iowait;
+            prev_irq = irq;
+            prev_softirq = softirq;
+            prev_steal = steal;
+        }
+    }
 
     fclose(file);
-
-    int total = user + nice + system + idle;
-    double total_cpu_usage = 100.0 - (100.0 * idle / total);
-
-    printf("CPU Usage: %.2f%%\n", total_cpu_usage);
 
     return (int)total_cpu_usage;
 }
 
-int memory_data(){
-// TODO: Improve this function to use more accurate memory statistics. similar to network_data()
-    int MemTotal = 0, MemFree = 0, Buffers = 0, Cached = 0;
 
+
+int memory_data() {
+    //TODO: Improve this function to use more accurate memory statistics. similar to network_data().
     FILE* file = fopen("/proc/meminfo", "r");
     if (file == NULL) {
         printf("Error opening /proc/meminfo\n");
         return -1;
     }
 
+    unsigned long memTotal, memFree, memAvailable, buffers, cached;
     char buffer[256];
+
     while (fgets(buffer, sizeof(buffer), file)) {
-        if (sscanf(buffer, "MemTotal: %d kB", &MemTotal) == 1) {
-
-        } else if (sscanf(buffer, "MemFree: %d kB", &MemFree) == 1) {
-
-        } else if (sscanf(buffer, "Buffers: %d kB", &Buffers) == 1) {
-
-        } else if (sscanf(buffer, "Cached: %d kB", &Cached) == 1) {
-
-        }
+        if (sscanf(buffer, "MemTotal: %lu kB", &memTotal) == 1) continue;
+        if (sscanf(buffer, "MemFree: %lu kB", &memFree) == 1) continue;
+        if (sscanf(buffer, "MemAvailable: %lu kB", &memAvailable) == 1) continue;
+        if (sscanf(buffer, "Buffers: %lu kB", &buffers) == 1) continue;
+        if (sscanf(buffer, "Cached: %lu kB", &cached) == 1) continue;
     }
     fclose(file);
-    
-    int MemUsed = MemTotal - MemFree - Buffers - Cached;
 
-    int MemUsedPercentage = 100 * MemUsed / MemTotal;
+    unsigned long used = memTotal - memFree - buffers - cached;
+    double memory_usage = 100.0 * used / memTotal;
 
-    printf("Memory Usage: %d%%\n", MemUsedPercentage);
-
-    return (int)MemUsedPercentage;
-       
+    return (int)memory_usage;
 }
 
 // ! after making the other 2 funcs copilot knew exactly what I wanted to do next. Even this comment..... scary stuff.
