@@ -54,9 +54,9 @@ document.addEventListener("DOMContentLoaded", function() {
             from: { color: '#FFEA82' },
             to: { color: '#ED6A5A' },
             step: (state, bar) => {
-                bar.setText(`${bar.value().toFixed(3)} seconds`);
+                bar.setText(`${(bar.value() * 100).toFixed(2)}%`);
             }
-        })
+        });
 
         fetchData(cpuData, memoryData);
     }
@@ -79,19 +79,17 @@ document.addEventListener("DOMContentLoaded", function() {
             fetch('/disk/usage')
             .then(response => response.json())
             .then(data => {
-                const diskIoSecondsString = data.disk_usage; 
-                const diskIoSeconds = parseFloat(diskIoSecondsString);
-                console.log('diskIoSeconds:', diskIoSeconds, typeof diskIoSeconds);
-                if (!isNaN(diskIoSeconds)) {
-                    const maxIoSeconds = 10; 
-                    const diskIoNormalized = Math.min(diskIoSeconds / maxIoSeconds, 1.0); 
+                const diskUsageString = data.disk_usage; 
+                const diskUsage = parseFloat(diskUsageString.replace('%', '')); // Remove the % sign and parse as float
+                console.log('diskUsage:', diskUsage, typeof diskUsage);
+                if (!isNaN(diskUsage)) {
+                    const diskIoNormalized = Math.min(diskUsage / 100, 1.0); // Normalize based on percentage
                     diskIoBar.animate(diskIoNormalized); 
-                    diskIoBar.setText(`${diskIoSeconds.toFixed(3)} seconds`);
                 } else {
-                    console.error('disk_usage is not a valid number:', diskIoSecondsString);
+                    console.error('disk_usage is not a valid number:', diskUsageString);
                 }
             });
 
-        setTimeout(() => fetchData(cpuData, memoryData), 500);
+        setTimeout(() => fetchData(cpuData, memoryData), 1500);
     }
 });

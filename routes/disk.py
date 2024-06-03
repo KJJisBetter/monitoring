@@ -10,5 +10,5 @@ lib.diskio_data.restype = ctypes.c_int
 @disk.route('/usage', methods=['GET'])
 def get_disk_usage():
     disk_usage = lib.diskio_data()
-    disk_format = f"{disk_usage / 1024:.2f} seconds"
+    disk_format = f"{disk_usage:.2f}%"
     return jsonify({'disk_usage': disk_format})
