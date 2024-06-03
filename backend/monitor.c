@@ -26,7 +26,7 @@ int main(int argc, char *argv[]){
             cpu_data();
             memory_data();
             diskio_data();
-            // network_data();
+            network_data(interval / 2);
 
             sleep(interval);
         }

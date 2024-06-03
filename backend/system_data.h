@@ -5,5 +5,6 @@
 int cpu_data();
 int memory_data();
 int diskio_data();
+int network_data();
 
 #endif // SYSTEM_DATA_H
