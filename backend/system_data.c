@@ -33,7 +33,7 @@ int cpu_data() {
 
     printf("CPU Usage: %.2f%%\n", total_cpu_usage);
 
-    return 0;
+    return (int)total_cpu_usage;
 }
 
 int memory_data(){
@@ -66,7 +66,7 @@ int memory_data(){
 
     printf("Memory Usage: %d%%\n", MemUsedPercentage);
 
-    return 0;
+    return (int)MemUsedPercentage;
        
 }
 
@@ -83,6 +83,8 @@ int diskio_data(){
     }
 
 
+    double total_io_seconds = 0.0;
+    unsigned long long total_io_ms = 0;
     char buffer[256];
     while (fgets(buffer, sizeof(buffer), file)) {
         int major, minor;
@@ -101,8 +103,8 @@ int diskio_data(){
                    &writes, &writes_merged, &sectors_written, &write_time,
                    &io_in_progress, &io_time, &io_time_weighted) >= 14) {
             if (strcmp(device, target_device) == 0) {
-                unsigned long long total_io_ms = read_time + write_time;
-                double total_io_seconds = total_io_ms / 1000.0;
+                total_io_ms = read_time + write_time;
+                total_io_seconds = total_io_ms / 1000.0;
 
                 printf("Total I/O Wait Time: %.3f seconds\n", total_io_seconds);
 
@@ -112,7 +114,7 @@ int diskio_data(){
     }
 
     fclose(file);
-    return 0;
+    return (unsigned long long)total_io_ms;
 }
 
 
@@ -216,5 +218,5 @@ int network_data(int interval){
     free(stats_start);
     free(stats_end);
 
-    return 0;
+    return net_in_kb + net_out_kb;
 }

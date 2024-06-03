@@ -3,11 +3,19 @@ import ctypes
 
 network = Blueprint('network', __name__)
 
-lib = ctypes.CDLL('./libnetwork.so')
+lib = ctypes.CDLL('./backend/libsystem_data.so')
 
-lib.get_network_info.restype = ctypes.c_double
+lib.network_data.restype = ctypes.c_int
 
-@network.route('/usage', methods=['GET'])
-def get_network_usage():
-    network_usage = lib.get_network_info()
-    return jsonify({'network_usage': network_usage})
+@network.route('/usage/<int:interval>', methods=['GET'])
+def get_network_usage(interval):
+    network_usage = lib.network_data(interval)
+
+    net_format = f"{network_usage:.2f} KB"
+
+
+    return jsonify({
+        'network': net_format
+    })
+
+# copilot seems to be insanely good at just knowing whats next after doing it once.

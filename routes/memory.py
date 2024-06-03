@@ -3,11 +3,11 @@ import ctypes
 
 memory = Blueprint('memory', __name__)
 
-lib = ctypes.CDLL('./libmemory.so')
+lib = ctypes.CDLL('./backend/libsystem_data.so')
 
-lib.get_memory_info.restype = ctypes.c_double
+lib.memory_data.restype = ctypes.c_int
 
 @memory.route('/usage', methods=['GET'])
 def get_memory_usage():
-    memory_usage = lib.get_memory_info()
+    memory_usage = lib.memory_data()
     return jsonify({'memory_usage': memory_usage})
