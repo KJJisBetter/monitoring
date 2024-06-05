@@ -128,15 +128,14 @@ document.addEventListener("DOMContentLoaded", function() {
         fetch('/disk/usage')
             .then(response => response.json())
             .then(data => {
-                const diskUsageString = data.disk_usage; 
-                const diskUsage = parseFloat(diskUsageString.replace('%', '')); // Remove the % sign and parse as float
-                console.log('diskUsage:', diskUsage, typeof diskUsage);
-                if (!isNaN(diskUsage)) {
-                    const diskIoNormalized = Math.min(diskUsage / 100, 1.0); // Normalize based on percentage
-                    diskIoBar.animate(diskIoNormalized); 
-                    diskIoBar.setText(`${diskUsage.toFixed(2)}%`); // Format to 0.00%
+                const diskIoSecondsString = data.disk_usage; 
+                const diskIoSeconds = parseFloat(diskIoSecondsString);
+                console.log('diskIoSeconds:', diskIoSeconds, typeof diskIoSeconds);
+                if (!isNaN(diskIoSeconds)) {
+                    diskIoBar.animate(diskIoSeconds / 10);
+                    diskIoBar.setText(`${diskIoSeconds.toFixed(3)} seconds`); 
                 } else {
-                    console.error('disk_usage is not a valid number:', diskUsageString);
+                    console.error('disk_usage is not a valid number:', diskIoSecondsString);
                 }
             });
 
