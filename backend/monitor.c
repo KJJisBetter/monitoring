@@ -5,7 +5,6 @@
 #include <unistd.h>
 #include "system_data.h"
 
-
 //this was mostly for testing purposes
 int main(int argc, char *argv[]){
     if(argc != 2 || atoi(argv[1]) <= 0){
@@ -27,7 +26,7 @@ int main(int argc, char *argv[]){
             cpu_data();
             memory_data();
             diskio_data();
-            // network_data(interval / 2); 
+            double network_data(int interval, struct NetworkUsage* usage); 
 
             sleep(interval);
         }

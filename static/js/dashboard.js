@@ -59,7 +59,7 @@ document.addEventListener("DOMContentLoaded", function() {
             from: { color: '#FFEA82' },
             to: { color: '#ED6A5A' },
             step: (state, bar) => {
-                bar.setText(`${(bar.value() * 100).toFixed(2)}%`);
+                bar.setText(`${bar.value().toFixed(3)} seconds`);
             }
         });
 
@@ -68,17 +68,17 @@ document.addEventListener("DOMContentLoaded", function() {
         networkChart = new Chart(ctx, {
             type: 'line',
             data: {
-                labels: [], // Time labels
+                labels: [], 
                 datasets: [{
                     label: 'Network In (KiBs)',
                     borderColor: 'rgba(75, 192, 192, 1)',
                     backgroundColor: 'rgba(75, 192, 192, 0.2)',
-                    data: [] // Network In data
+                    data: [] 
                 }, {
                     label: 'Network Out (KiBs)',
                     borderColor: 'rgba(255, 99, 132, 1)',
                     backgroundColor: 'rgba(255, 99, 132, 0.2)',
-                    data: [] // Network Out data
+                    data: [] 
                 }]
             },
             options: {
@@ -132,7 +132,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 const diskIoSeconds = parseFloat(diskIoSecondsString);
                 console.log('diskIoSeconds:', diskIoSeconds, typeof diskIoSeconds);
                 if (!isNaN(diskIoSeconds)) {
-                    diskIoBar.animate(diskIoSeconds / 10);
+                    diskIoBar.animate(diskIoSeconds / 1024);
                     diskIoBar.setText(`${diskIoSeconds.toFixed(3)} seconds`); 
                 } else {
                     console.error('disk_usage is not a valid number:', diskIoSecondsString);
