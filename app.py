@@ -7,6 +7,7 @@ from routes.network import network
 
 app = Flask(__name__)
 
+#the first one I used copilot to learn about this way of getting the data. then the rest is just common sense
 app.register_blueprint(cpu, url_prefix='/cpu')
 app.register_blueprint(disk, url_prefix='/disk')
 app.register_blueprint(memory, url_prefix='/memory')

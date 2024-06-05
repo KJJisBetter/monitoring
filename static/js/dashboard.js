@@ -2,8 +2,13 @@ document.addEventListener("DOMContentLoaded", function() {
     google.charts.load('current', { packages: ['gauge'] });
     google.charts.setOnLoadCallback(drawGauges);
 
+    //mostly done by me with some help from the internet to find out the right charts and gauges for what I wanted.
+    // used the ai for most the styling. I hate css and styling stuff.
+
     let cpuGauge, memoryGauge;
     let diskIoBar;
+    let networkChart;
+    const maxDataPoints = 60;
 
     function drawGauges() {
         const cpuData = google.visualization.arrayToDataTable([
@@ -54,9 +59,53 @@ document.addEventListener("DOMContentLoaded", function() {
             from: { color: '#FFEA82' },
             to: { color: '#ED6A5A' },
             step: (state, bar) => {
-                bar.setText(`${bar.value().toFixed(3)} seconds`);
+                bar.setText(`${(bar.value() * 100).toFixed(2)}%`);
             }
-        })
+        });
+
+        // Create and configure the Chart.js line chart for network traffic
+        const ctx = document.getElementById('networkChart').getContext('2d');
+        networkChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [], // Time labels
+                datasets: [{
+                    label: 'Network In (KiBs)',
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                    data: [] // Network In data
+                }, {
+                    label: 'Network Out (KiBs)',
+                    borderColor: 'rgba(255, 99, 132, 1)',
+                    backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                    data: [] // Network Out data
+                }]
+            },
+            options: {
+                scales: {
+                    x: {
+                        type: 'time',
+                        time: {
+                            unit: 'second',
+                            displayFormats: {
+                                second: 'h:mm:ss a'
+                            }
+                        },
+                        title: {
+                            display: true,
+                            text: 'Time'
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'KiBs'
+                        }
+                    }
+                }
+            }
+        });
 
         fetchData(cpuData, memoryData);
     }
@@ -76,22 +125,43 @@ document.addEventListener("DOMContentLoaded", function() {
                 memoryGauge.draw(memoryData, null);
             });
 
-            fetch('/disk/usage')
+        fetch('/disk/usage')
             .then(response => response.json())
             .then(data => {
-                const diskIoSecondsString = data.disk_usage; 
-                const diskIoSeconds = parseFloat(diskIoSecondsString);
-                console.log('diskIoSeconds:', diskIoSeconds, typeof diskIoSeconds);
-                if (!isNaN(diskIoSeconds)) {
-                    const maxIoSeconds = 10; 
-                    const diskIoNormalized = Math.min(diskIoSeconds / maxIoSeconds, 1.0); 
+                const diskUsageString = data.disk_usage; 
+                const diskUsage = parseFloat(diskUsageString.replace('%', '')); // Remove the % sign and parse as float
+                console.log('diskUsage:', diskUsage, typeof diskUsage);
+                if (!isNaN(diskUsage)) {
+                    const diskIoNormalized = Math.min(diskUsage / 100, 1.0); // Normalize based on percentage
                     diskIoBar.animate(diskIoNormalized); 
-                    diskIoBar.setText(`${diskIoSeconds.toFixed(3)} seconds`);
+                    diskIoBar.setText(`${diskUsage.toFixed(2)}%`); // Format to 0.00%
                 } else {
-                    console.error('disk_usage is not a valid number:', diskIoSecondsString);
+                    console.error('disk_usage is not a valid number:', diskUsageString);
                 }
             });
 
+        fetch('/network/usage/1')
+            .then(response => response.json())
+            .then(data => {
+                const now = new Date();
+                const networkIn = data.network_in; 
+                const networkOut = data.network_out; 
+                addNetworkData(networkChart, now, networkIn, networkOut);
+            })
+            .catch(error => console.error('Error fetching network data:', error));
+
         setTimeout(() => fetchData(cpuData, memoryData), 500);
+    }
+
+    function addNetworkData(chart, label, networkIn, networkOut) {
+        if (chart.data.labels.length >= maxDataPoints) {
+            chart.data.labels.shift(); 
+            chart.data.datasets[0].data.shift(); 
+            chart.data.datasets[1].data.shift(); 
+        }
+        chart.data.labels.push(label);
+        chart.data.datasets[0].data.push(networkIn);
+        chart.data.datasets[1].data.push(networkOut);
+        chart.update();
     }
 });

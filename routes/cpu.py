@@ -1,6 +1,7 @@
 from flask import Blueprint, jsonify
 import ctypes
 
+# used copilot here to learn about ctypes to use c as a backend
 cpu = Blueprint('cpu', __name__)
 
 lib = ctypes.CDLL('./backend/libsystem_data.so')

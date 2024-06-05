@@ -5,6 +5,8 @@
 #include <unistd.h>
 #include "system_data.h"
 
+
+//this was mostly for testing purposes
 int main(int argc, char *argv[]){
     if(argc != 2 || atoi(argv[1]) <= 0){
         printf("Usage: %s interval\n", argv[0]);
