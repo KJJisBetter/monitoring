@@ -6,8 +6,12 @@
 #include <unistd.h>
 
 
+// in all this funcs I used copilot to get the values I needed to get from the files to get the data.
+// even tho I still had to open the file myself to see what I needed sometimes.
+
 int cpu_data() {
     //TODO: Improve this function to use more accurate CPU statistics. similar to network_data().
+    //done
     static unsigned long long prev_user = 0, prev_nice = 0, prev_system = 0, prev_idle = 0;
     static unsigned long long prev_iowait = 0, prev_irq = 0, prev_softirq = 0, prev_steal = 0;
 
@@ -59,6 +63,7 @@ int cpu_data() {
 
 int memory_data() {
     //TODO: Improve this function to use more accurate memory statistics. similar to network_data().
+    // done
     FILE* file = fopen("/proc/meminfo", "r");
     if (file == NULL) {
         printf("Error opening /proc/meminfo\n");
@@ -90,6 +95,7 @@ int diskio_data() {
     const char* target_device = "sda";
     static unsigned long long prev_io_time = 0;
 
+    // command to see the data I can get: -> cat /proc/diskstats
     FILE* file = fopen("/proc/diskstats", "r");
     if (file == NULL) {
         printf("Error opening /proc/diskstats\n");
@@ -140,28 +146,16 @@ struct NetworkData {
     unsigned long long packets_transmitted;
 };
 
-
-
-int network_data(int interval){
-    struct NetworkData* stats_start = malloc(sizeof(struct NetworkData)); 
-    struct NetworkData* stats_end = malloc(sizeof(struct NetworkData));
-    if (stats_start == NULL || stats_end == NULL) {
-        perror("Error allocating memory");
-        return -1;
-    }
-
+// most this network stuff was done using chatgpt. I had it working but I couldnt figure out how to separate net_in and net_out to the api..
+void read_network_data(struct NetworkData* data) {
     FILE* file = fopen("/proc/net/dev", "r");
     if (file == NULL) {
         perror("Error opening /proc/net/dev");
-        return -1;
+        return;
     }
-
-    memset(stats_start, 0, sizeof(struct NetworkData));
-    memset(stats_end, 0, sizeof(struct NetworkData));
 
     char buffer[256];
     while (fgets(buffer, sizeof(buffer), file)) {
-
         if (strstr(buffer, "Inter-") || strstr(buffer, " face")) {
             continue;
         }
@@ -169,66 +163,57 @@ int network_data(int interval){
         char interface[32];
         unsigned long long bytes_received, packets_received, bytes_transmitted, packets_transmitted;
 
-        // ! copilot seems to struggle with the amount of specifiers needed. Usually adds more than needed.
         if (sscanf(buffer, "%s %llu %llu %llu %llu",
                    interface,
                    &bytes_received, &packets_received,
                    &bytes_transmitted, &packets_transmitted) == 5) {
-                    
-                    stats_start->bytes_received = bytes_received;
-                    stats_start->packets_received = packets_received;
-                    stats_start->bytes_transmitted = bytes_transmitted;
-                    stats_start->packets_transmitted = packets_transmitted;                
-                    break;
+            data->bytes_received = bytes_received;
+            data->packets_received = packets_received;
+            data->bytes_transmitted = bytes_transmitted;
+            data->packets_transmitted = packets_transmitted;
+            break;
         }
-        
     }
 
     fclose(file);
+}
+
+double network_data(int interval, struct NetworkUsage* usage) {
+    struct NetworkData stats_start, stats_end;
+
+    // I dont like using stuff  if I dont know what it does.
+    // I asked gpt what it does and I still dont understand very well. But I think it just sets the value of the struct to 0. So when needed later it will be the correct value.
+    // chatgpt: By initializing the structures to zero, you ensure that any fields not explicitly set later will be zero.
+    memset(&stats_start, 0, sizeof(struct NetworkData));
+    memset(&stats_end, 0, sizeof(struct NetworkData));
+
+    //calling another function to get the network data.
+    read_network_data(&stats_start);
+
 
     sleep(interval);
 
-    file = fopen("/proc/net/dev", "r");
-    if (file == NULL) {
-        perror("Error opening /proc/net/dev");
-        return -1;
-    }
+    //not once but twice. I would have never thought of this.
+    //But it makes sense. it makes the code more readable and easier to understand.
+    read_network_data(&stats_end);
 
-    while (fgets(buffer, sizeof(buffer), file)) {
 
-        if (strstr(buffer, "Inter-") || strstr(buffer, " face")) {
-            continue;
-        }
+    unsigned long long net_in = stats_end.bytes_received - stats_start.bytes_received;
+    unsigned long long net_out = stats_end.bytes_transmitted - stats_start.bytes_transmitted;
 
-        char interface[32];
-        unsigned long long bytes_received, packets_received, bytes_transmitted, packets_transmitted;
-
-        if (sscanf(buffer, "%s %llu %llu %llu %llu",
-                   interface,
-                   &bytes_received, &packets_received,
-                   &bytes_transmitted, &packets_transmitted) == 5) {
-                    
-                    stats_end->bytes_received = bytes_received;
-                    stats_end->packets_received = packets_received;
-                    stats_end->bytes_transmitted = bytes_transmitted;
-                    stats_end->packets_transmitted = packets_transmitted;
-                    break;
-        }
-    }
-
-    fclose(file);
-
-    unsigned long long net_in = stats_end->bytes_received - stats_start->bytes_received;
-    unsigned long long net_out = stats_end->bytes_transmitted - stats_start->bytes_transmitted;
 
     double net_in_kb = net_in / 1024.0 / interval;
     double net_out_kb = net_out / 1024.0 / interval;
 
     printf("Network In: %.2f KiB/s Network Out: %.2f KiB/s\n", net_in_kb, net_out_kb);
 
+    // I would have never come up with this.
+    usage->inbound = net_in_kb;
+    usage->outbound = net_out_kb;
 
-    free(stats_start);
-    free(stats_end);
-
+    // funny how it left my attempt at getting both values even tho I knew thats not the way to do it.
+    // this would just add both values and return it. but I wanted to see if it at least got one value. to see the chart.
     return net_in_kb + net_out_kb;
 }
+
+// !compile command for a shared library:-> gcc -shared -o libsystem_data.so -fPIC system_data.c
