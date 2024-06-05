@@ -20,7 +20,6 @@ int main(int argc, char *argv[]){
             time_t now = time(NULL);
             struct tm *local_time = localtime(&now);
 
-            // Format the time into a human-readable string
             char time_str[100];
             strftime(time_str, sizeof(time_str), "%H:%M:%S", local_time);
             printf("Current time: %s\n", time_str);
@@ -28,7 +27,7 @@ int main(int argc, char *argv[]){
             cpu_data();
             memory_data();
             diskio_data();
-            network_data(interval / 2);
+            // network_data(interval / 2);
 
             sleep(interval);
         }
